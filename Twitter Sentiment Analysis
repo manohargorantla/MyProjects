@@ -1,0 +1,94 @@
+install.packages("twitteR")
+library(twitteR)
+
+install.packages("RCurl")
+library(RCurl)
+require(twitteR)
+
+
+consumer_key <- "W9rCYJrBoHyFvjR5UXQMmjNBd"
+consumer_secret <- "5doiNaQ1t9zL4v5cal8iv8AJkSzgQPCPsziuxl6MHb7vlPiKiF"
+access_token <- "215910430-lnaxUy9ukx0vP8NgxNjM9KEgfyZ2XB5EoDHeSYFZ"
+access_secret <- "nSNMgwUihZtvJFWEWTJuCJM7MXizIsXFvPKLIuevCBKDX"
+
+setup_twitter_oauth(consumer_key, consumer_secret, access_token, access_secret)
+seo_tweet <- searchTwitter("Data Science", n=50, lang = "en")
+str(seo_tweet)
+seo_tweet[1:3]
+
+install.packages("tm")
+library(tm)
+
+install.packages("wordcloud")
+library(wordcloud)
+require(tm)
+require(wordcloud)
+
+news <- searchTwitter("IT Grids", n=150, lang = "en", resultType = "recent")
+class(news)
+news_txt <- sapply(news, function(x) x$getText())
+str(news_txt)
+
+news_corpus <- Corpus(VectorSource(news_txt))
+news_corpus
+inspect(news_corpus)
+inspect(news_corpus[2])
+
+news_clean <- tm_map(news_corpus, removePunctuation)
+
+inspect(news_clean)
+
+news_clean1 <- tm_map(news_clean, content_transformer(tolower))
+news_clean2 <- tm_map(news_clean1, removeWords, stopwords("english"))
+news_clean3 <- tm_map(news_clean2, removeNumbers)
+news_clean4 <- tm_map(news_clean3, stripWhitespace)
+
+
+## Split the String into seperate words
+
+install.packages("stringr")
+library(stringr)
+
+words_split <- str_split(news_clean4, pattern = "\\s+")
+words_split
+class(words_split) ## list
+
+## Convert the data type list to character 
+words_char <- unlist(words_split)
+class(words_char) ## character
+words_char
+
+str(words_char)
+
+tdm_news <- TermDocumentMatrix(news_clean4)
+TDM1<-as.matrix(tdm_news) 
+v = sort(rowSums(TDM1), decreasing = TRUE)
+str(v)
+Summary(v)
+
+## Match & Split the positive words and negative words
+
+#Read the positive words
+poswords <- scan('http://ptrckprry.com/course/ssd/data/positive-words.txt', what = "character", comment.char = ";")
+str(poswords)
+
+#Read the negative words
+negwords <- scan('http://ptrckprry.com/course/ssd/data/negative-words.txt', what = "character", comment.char = ";")
+str(negwords)
+
+## find the positive and negative words from dataset by comparing
+Pwords <- match(words_char, poswords)
+Nwords <- match(words_char, negwords)
+
+# Find the sum of postive words and negative words from dataset
+Pwords_sum <- sum(!is.na(Pwords))
+Nwords_sum <- sum(!is.na(Nwords))
+
+##Sentiment Analysis score
+# Based on score we decide the opinion either positive or negative
+Score <- Pwords_sum-Nwords_sum
+mean(Score)
+sd(Score)
+
+wordcloud(news_clean4)
+wordcloud(news_clean4, random.order = FALSE, scale = c(7,0.5), color=rainbow(10))
